@@ -1,95 +1,45 @@
-const Teacher = require('../models/teacherModel');
-const User = require('../models/userModel');
+const Tenant = require('../models/tenantModel');
 const ValidationHelper = require('../utils/validationHelpers');
 
-exports.createTeacher = async (req, res) => {
+exports.createTenant = async (req, res) => {
     try {
-        const { user_id, specialization_id, first_name, last_name, phone_number } = req.body;
+        const { name, contact_email, phone_number, address, p_o_box, logo } = req.body;
 
-        // Validation
+        // Validate inputs using your existing helpers
+        await ValidationHelper.validateTenantName(name);
+        ValidationHelper.validateEmail(contact_email);
         ValidationHelper.validatePhoneNumber(phone_number);
-        [first_name, last_name].forEach(ValidationHelper.sanitizeInput);
+        ValidationHelper.validatePOBox(p_o_box);
 
-        // Verify user exists in tenant
-        const user = await User.findOne({
-            _id: user_id,
-            tenant_id: req.tenant._id
+        // Check for existing tenant
+        const existingTenant = await Tenant.findOne({
+            $or: [
+                { contact_email },
+                { phone_number },
+                { name: { $regex: new RegExp(`^${name}$`, 'i') } }
+            ]
         });
-        if (!user) throw new Error('User not found in tenant');
-
-        const teacher = new Teacher({
-            tenant_id: req.tenant._id,
-            user_id,
-            specialization_id,
-            first_name,
-            last_name,
-            phone_number
-        });
-
-        await teacher.save();
-        res.status(201).json(teacher);
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
-};
-
-exports.assignSubjects = async (req, res) => {
-    try {
-        const { teacher_id, subject_ids } = req.body;
         
-        const teacher = await Teacher.findOneAndUpdate(
-            { 
-                _id: teacher_id,
-                tenant_id: req.tenant._id 
-            },
-            { $addToSet: { assigned_subjects: { $each: subject_ids } } },
-            { new: true, runValidators: true }
-        );
+        if (existingTenant) {
+            return res.status(409).json({
+                error: 'Tenant already exists',
+                conflictField: existingTenant.contact_email === contact_email ? 'email' : 
+                             existingTenant.phone_number === phone_number ? 'phone' : 'name'
+            });
+        }
 
-        if (!teacher) throw new Error('Teacher not found');
-        res.json(teacher);
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
-};
+        const tenant = new Tenant(req.body);
+        await tenant.save();
 
-exports.getTeachers = async (req, res) => {
-    try {
-        const { 
-            page = 1, 
-            limit = 10, 
-            search = '',
-            status = 'active',
-            specialization 
-        } = req.query;
-
-        const query = {
-            tenant_id: req.tenant._id,
-            status,
-            ...(search && {
-                $or: [
-                    { first_name: { $regex: search, $options: 'i' } },
-                    { last_name: { $regex: search, $options: 'i' } }
-                ]
-            }),
-            ...(specialization && { specialization_id: specialization })
-        };
-
-        const teachers = await Teacher.find(query)
-            .populate('user_id', 'name email')
-            .populate('specialization_id', 'name')
-            .limit(Number(limit))
-            .skip((page - 1) * limit);
-
-        const total = await Teacher.countDocuments(query);
-
-        res.json({
-            teachers,
-            currentPage: Number(page),
-            totalPages: Math.ceil(total / limit),
-            totalTeachers: total
+        res.status(201).json({
+            message: 'Tenant created successfully',
+            tenant: tenant.toJSON()
         });
+
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(400).json({
+            error: error.message,
+            validation: error.errors
+        });
     }
 };
