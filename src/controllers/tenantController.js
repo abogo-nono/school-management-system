@@ -125,3 +125,28 @@ exports.bulkCreateTenants = async (req, res) => {
         res.status(400).json({ error: error.message });
     }
 };
+
+exports.updateTenant = async (req, res) => {
+    try {
+        const tenant = await Tenant.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true, runValidators: true }
+        );
+
+        if (!tenant) {
+            return res.status(404).json({ error: 'Tenant not found' });
+        }
+
+        res.json({
+            message: 'Tenant updated successfully',
+            tenant
+        });
+
+    } catch (error) {
+        res.status(400).json({ 
+            error: error.message,
+            validation: error.errors 
+        });
+    }
+};
