@@ -78,3 +78,50 @@ exports.getTenants = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+exports.bulkCreateTenants = async (req, res) => {
+    try {
+        const tenants = req.body.tenants;
+        if (!Array.isArray(tenants)) {
+            return res.status(400).json({ error: 'Invalid tenants array format' });
+        }
+
+        const results = await Promise.all(
+            tenants.map(async (tenantData) => {
+                try {
+                    const existing = await Tenant.findOne({
+                        $or: [
+                            { contact_email: tenantData.contact_email },
+                            { phone_number: tenantData.phone_number }
+                        ]
+                    });
+                    
+                    if (!existing) {
+                        const tenant = new Tenant(tenantData);
+                        await tenant.save();
+                        return { success: true, tenant };
+                    }
+                    return { 
+                        success: false, 
+                        error: 'Conflict', 
+                        data: tenantData 
+                    };
+                } catch (error) {
+                    return { 
+                        success: false, 
+                        error: error.message, 
+                        data: tenantData 
+                    };
+                }
+            })
+        );
+
+        res.status(207).json({
+            message: 'Bulk create completed with partial success',
+            results
+        });
+
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
