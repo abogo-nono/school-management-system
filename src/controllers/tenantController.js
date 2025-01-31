@@ -150,3 +150,18 @@ exports.updateTenant = async (req, res) => {
         });
     }
 };
+
+exports.deleteTenant = async (req, res) => {
+    try {
+        const tenant = await Tenant.findByIdAndDelete(req.params.id);
+        
+        if (!tenant) {
+            return res.status(404).json({ error: 'Tenant not found' });
+        }
+
+        res.status(204).send();
+
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
