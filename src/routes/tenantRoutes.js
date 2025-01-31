@@ -2,7 +2,7 @@ const express = require('express');
 const {
     createTenant,
     // bulkCreateTenants,
-    // getTenants,
+    getTenants,
     // getTenant,
     // updateTenant,
     // bulkUpdateTenants,
@@ -14,7 +14,7 @@ const router = express.Router();
 
 router.post('/', createTenant);
 // router.post('/bulk', bulkCreateTenants);
-// router.get('/', getTenants);
+router.get('/', getTenants);
 // router.get('/:id', getTenant);
 // router.put('/:id', updateTenant);
 // router.put('/', bulkUpdateTenants);
