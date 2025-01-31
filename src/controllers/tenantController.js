@@ -43,3 +43,38 @@ exports.createTenant = async (req, res) => {
         });
     }
 };
+
+exports.getTenants = async (req, res) => {
+    try {
+        const { page = 1, limit = 10, search = '', status = '' } = req.query;
+        
+        const query = {
+            ...(search && {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { contact_email: { $regex: search, $options: 'i' } }
+                ]
+            }),
+            ...(status && { status })
+        };
+
+        const [tenants, total] = await Promise.all([
+            Tenant.find(query)
+                .sort({ created_at: -1 })
+                .limit(Number(limit))
+                .skip((page - 1) * limit)
+                .lean(),
+            Tenant.countDocuments(query)
+        ]);
+
+        res.json({
+            tenants,
+            currentPage: Number(page),
+            totalPages: Math.ceil(total / limit),
+            totalTenants: total
+        });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
