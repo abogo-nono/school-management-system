@@ -29,12 +29,16 @@ const authMiddleware = async (req, res, next) => {
 
 const roleMiddleware = (allowedRoles) => {
     return async (req, res, next) => {
-        const userRole = req.user.role_id.name;
-
-        if (!allowedRoles.includes(userRole)) {
-            return res.status(403).json({ error: 'Insufficient permissions' });
+        // Allow super admin to bypass tenant checks
+        if (req.user.role_id.name === 'super_admin') {
+            return next();
         }
 
+        // Existing role check logic
+        if (!allowedRoles.includes(req.user.role_id.name)) {
+            return res.status(403).json({ error: 'Insufficient permissions' });
+        }
+        
         next();
     };
 };
