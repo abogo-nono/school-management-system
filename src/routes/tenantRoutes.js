@@ -6,7 +6,7 @@ const {
     // getTenant,
     updateTenant,
     // bulkUpdateTenants,
-    // deleteTenant,
+    deleteTenant,
     // bulkDeleteTenants
 } = require('../controllers/tenantController');
 
@@ -18,7 +18,7 @@ router.get('/', getTenants);
 // router.get('/:id', getTenant);
 router.put('/:id', updateTenant);
 // router.put('/', bulkUpdateTenants);
-// router.delete('/:id', deleteTenant);
+router.delete('/:id', deleteTenant);
 // router.delete('/', bulkDeleteTenants);
 
 module.exports = router;
