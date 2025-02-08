@@ -30,7 +30,6 @@ const tenantRoutes = require('./src/routes/tenantRoutes');
 const roleRoutes = require('./src/routes/roleRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 const studentRoutes = require('./src/routes/studentRoutes');
-// Add to existing imports
 const parentRoutes = require('./src/routes/parentRoutes');
 
 
